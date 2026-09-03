@@ -62,10 +62,10 @@ class ViewServiceProvider extends LaravelViewServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(LaravelBladeMapper::class, static fn ($app) => new BladeMapper($app));
-
         if ($this->isRunning) {
+            $this->app->singleton(LaravelBladeMapper::class, static fn ($app) => new BladeMapper($app));
             $this->registerGServerlessViewFinder();
+            $this->registerGServerlessBladeCompiler();
             $this->registerGServerlessEngineResolver();
             $this->registerGServerlessViewFactory(); // Register our custom factory
         } elseif ($this->isServerless && !$this->isRunning) {
@@ -138,11 +138,9 @@ class ViewServiceProvider extends LaravelViewServiceProvider
     }
 
     /**
-     * Register the GServerless Blade engine implementation (Runtime).
-     *
-     * @param mixed $resolver
+     * Register the Blade compiler implementation.
      */
-    public function registerGServerlessBladeEngine($resolver): void
+    public function registerGServerlessBladeCompiler(): void
     {
         $this->app->singleton('gserverless.blade.compiler.fake', static function ($app) {
             $finder           = $app['view.finder'];
@@ -158,6 +156,16 @@ class ViewServiceProvider extends LaravelViewServiceProvider
             throw new \RuntimeException('GServerless FileViewFinder not correctly registered or failed to load manifest.');
         });
 
+        $this->app->singleton('blade.compiler', static fn ($app) => $app['gserverless.blade.compiler.fake']);
+    }
+
+    /**
+     * Register the GServerless Blade engine implementation (Runtime).
+     *
+     * @param mixed $resolver
+     */
+    public function registerGServerlessBladeEngine($resolver): void
+    {
         $resolver->register('blade', fn () => new CompilerEngine($this->app['gserverless.blade.compiler.fake']));
     }
 

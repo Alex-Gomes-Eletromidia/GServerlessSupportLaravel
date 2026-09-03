@@ -30,6 +30,7 @@ Based on original work for App Engine ([GaeSupportL5](https://github.com/shpasse
 * **Google Cloud Operations Suite** integration
     * **Cloud Logging** destination with structured logs (see [docs/logging.md](docs/logging.md)).
     * **Error Reporting** integration for aggregation of reported exceptions (see [docs/logging.md](docs/logging.md#error-reporting)).
+        * **Client Side JavaScript Error** ingestion (see [docs/client-side-error-report.md](docs/client-side-error-reporting.md)).
     * **Cloud Trace** (via [opentelemetry](https://github.com/open-telemetry/opentelemetry-php)) (see [docs/trace.md](docs/trace.md))
         * Distributed trace propagation via [Guzzle](src/AffordableMobiles/GServerlessSupportLaravel/Trace/Instrumentation/Guzzle/GuzzleInstrumentation.php#L70).
         * Integration with [laravel-debugbar](https://github.com/barryvdh/laravel-debugbar) (optional, see [docs/debugbar.md](docs/debugbar.md)).
@@ -43,6 +44,8 @@ Based on original work for App Engine ([GaeSupportL5](https://github.com/shpasse
 * **Cloud Firestore in Datastore mode** integration
     * **Session handler** (optional, see [docs/sessions.md](docs/sessions.md)).
     * **Eloquent driver** via [eloquent-datastore](https://github.com/affordablemobiles/eloquent-datastore).
+* **Cloud Firestore in MongoDB mode** integration (see [docs/firestore-mongodb.md](docs/firestore-mongodb.md)).
+    * **IAM Authentication**
 * Optimizations for containerized deployment
     * `bootstrap/cache` generation before deployment (see [g-serverless:prepare](src/AffordableMobiles/GServerlessSupportLaravel/Console/GServerlessPrepareCommand.php)).
     * Blade View Pre-Compiler (optional, see [docs/blade-pre-compile.md](docs/blade-pre-compile.md))

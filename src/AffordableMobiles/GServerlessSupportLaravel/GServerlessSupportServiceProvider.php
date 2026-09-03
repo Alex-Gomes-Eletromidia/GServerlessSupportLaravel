@@ -9,6 +9,7 @@ use AffordableMobiles\GServerlessSupportLaravel\Session\DatastoreSessionHandler;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem as Flysystem;
 
@@ -33,6 +34,8 @@ class GServerlessSupportServiceProvider extends ServiceProvider
             __DIR__.'/../../config/gserverlesssupport.php',
             'gserverlesssupport'
         );
+
+        $this->registerInstanceScopedCache();
     }
 
     /**
@@ -45,10 +48,17 @@ class GServerlessSupportServiceProvider extends ServiceProvider
             __DIR__.'/../../config/gserverlesssupport.php' => config_path('gserverlesssupport.php'),
         ]);
 
+        $this->shareAssetPaths();
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 Console\GServerlessPrepareCommand::class,
+                Console\GServerlessPublishAssetsCommand::class,
             ]);
+
+            $this->publishes([
+                __DIR__.'/../../resources/js/dist' => public_path('vendor/g-serverless-support'),
+            ], 'gss-js-assets');
         }
 
         // Register the DatastoreSessionHandler
@@ -77,5 +87,65 @@ class GServerlessSupportServiceProvider extends ServiceProvider
     public function provides()
     {
         return ['g-serverless-support'];
+    }
+
+    /**
+     * Registers the instance-scoped cache store configuration.
+     */
+    protected function registerInstanceScopedCache(): void
+    {
+        $config = $this->app->make('config');
+
+        $cachePath = $config->get(
+            'gserverlesssupport.system_cache_path',
+            '/tmp/cache/GServerlessSupportLaravel' // Fallback
+        );
+
+        $defaults = [
+            'driver' => 'file',
+            'path'   => $cachePath,
+        ];
+
+        $userConfig = $config->get('cache.stores.instance-scoped', []);
+
+        $config->set(
+            'cache.stores.instance-scoped',
+            array_merge($defaults, $userConfig)
+        );
+    }
+
+    /**
+     * Finds and shares the versioned asset paths from the Vite manifest.
+     */
+    private function shareAssetPaths(): void
+    {
+        if ($this->app->runningInConsole()) {
+            return;
+        }
+
+        $manifestPath = public_path('vendor/g-serverless-support/.vite/manifest.json');
+
+        if (!file_exists($manifestPath)) {
+            return;
+        }
+
+        try {
+            $manifest = json_decode(file_get_contents($manifestPath), true, 512, JSON_THROW_ON_ERROR);
+
+            $entryPoints = [
+                'errorReporter' => 'src/resources/js/error-reporter.js',
+            ];
+
+            foreach ($entryPoints as $viewVariableName => $sourceFile) {
+                if (isset($manifest[$sourceFile]['file'])) {
+                    $assetPath = asset('vendor/g-serverless-support/'.$manifest[$sourceFile]['file']);
+
+                    View::share($viewVariableName.'AssetPath', $assetPath);
+                }
+            }
+        } catch (\JsonException $e) {
+            // Manifest is likely corrupt, do nothing.
+            return;
+        }
     }
 }
